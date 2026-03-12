@@ -106,6 +106,18 @@ class RuNormalizrStageTests(unittest.TestCase):
             "(смотри рисунок)",
         )
 
+    def test_abbreviation_stage_expands_article_only_before_digit(self):
+        self.assertEqual(
+            expand_abbreviations("ст. 15 УК РФ"),
+            "статья 15 уголовный кодекс российской федерации",
+        )
+
+    def test_abbreviation_stage_keeps_article_abbreviation_without_digit(self):
+        self.assertEqual(
+            expand_abbreviations("ст. ложка"),
+            "ст. ложка",
+        )
+
     def test_abbreviation_stage_drops_terminal_dot_inside_sentence(self):
         self.assertEqual(
             expand_abbreviations("и т. д. и т. п."),

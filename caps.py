@@ -20,7 +20,9 @@ def normalize_first_word_caps(text: str, enabled: bool = True) -> str:
         match = first_word_pattern.match(line)
         if match:
             word = match.group(2)
-            if word not in KNOWN_ABBREVIATIONS and len(word) > 3:
+            rest = line[match.end() :]
+            has_following_alpha = any(char.isalpha() for char in rest)
+            if word not in KNOWN_ABBREVIATIONS and len(word) > 3 and has_following_alpha:
                 parts[idx] = match.group(1) + word.capitalize() + line[match.end() :]
 
     return "".join(parts)

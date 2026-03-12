@@ -58,6 +58,9 @@ class RuNormalizrApiTests(unittest.TestCase):
 
         self.assertEqual(normalize("ПРИВЕТ мир", options), "ПРИВЕТ мир")
 
+    def test_tts_does_not_decap_single_all_caps_token(self):
+        self.assertEqual(preprocess_text("СВСН", NormalizeOptions.tts()), "СВСН")
+
     def test_preprocess_text_is_exported(self):
         self.assertIn("10 кг", preprocess_text("10кг"))
 
@@ -317,6 +320,11 @@ class RuNormalizrApiTests(unittest.TestCase):
             normalize("ГИБДД", NormalizeOptions.tts()),
             "ги бэ дэ дэ",
         )
+
+    def test_tts_expands_unknown_cyrillic_letter_abbreviations(self):
+        self.assertEqual(normalize("СВСН", NormalizeOptions.tts()), "эс вэ эс эн")
+        self.assertEqual(normalize("ЦРУ", NormalizeOptions.tts()), "цэ эр уу")
+        self.assertEqual(normalize("ФБР", NormalizeOptions.tts()), "эф бэ эр")
 
     def test_safe_mode_keeps_caps_and_letter_abbreviations_conservative(self):
         self.assertEqual(normalize("ГЛАВА IV.", NormalizeOptions.safe()), "ГЛАВА четыре.")
