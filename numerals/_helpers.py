@@ -6,7 +6,11 @@ from typing import Any
 import num2words
 
 from .._morph import get_morph
-from ..preprocess_utils import NEGATIVE_NUMBER_PLACEHOLDER, PARAGRAPH_BREAK_PLACEHOLDER
+from ..preprocess_utils import (
+    NEGATIVE_NUMBER_PLACEHOLDER,
+    PARAGRAPH_BREAK_PLACEHOLDER,
+    normalize_ascii_quote_pairs,
+)
 from ._constants import ENTITY_DEFAULT_CASE, ENTITY_KEYWORDS, PREP_CASE, TIME_WORDS, VERB_CASE
 
 TOKEN_PATTERN = re.compile(
@@ -439,4 +443,4 @@ def detokenize(tokens: list[str]) -> str:
     text = DOT_COMMA_PATTERN.sub(".", text)
     text = OPEN_BRACKET_SPACING_PATTERN.sub(r"\1", text)
     text = CLOSE_BRACKET_SPACING_PATTERN.sub(r"\1", text)
-    return text
+    return normalize_ascii_quote_pairs(text)

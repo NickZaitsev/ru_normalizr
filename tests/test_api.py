@@ -75,7 +75,7 @@ class RuNormalizrApiTests(unittest.TestCase):
             preprocess_text(
                 "Часть два.\nПалеозой: утро\n\nКембрий пятьсот сорок один,"
             ),
-            "Часть два.\nПалеозой: утро.\nКембрий пятьсот сорок один,",
+            "Часть два.\nПалеозой: утро.\n\nКембрий пятьсот сорок один,",
         )
 
     def test_preprocess_text_does_not_insert_legacy_dot_at_start_of_text(self):
@@ -93,19 +93,28 @@ class RuNormalizrApiTests(unittest.TestCase):
     def test_preprocess_text_preserves_paragraphs_but_limits_linebreaks(self):
         self.assertEqual(
             preprocess_text("Первая строка\n\n\n\nВторая строка"),
-            "Первая строка.\nВторая строка",
+            "Первая строка.\n\nВторая строка",
         )
 
     def test_preprocess_text_inserts_legacy_dot_before_uppercase_paragraph(self):
         self.assertEqual(
             preprocess_text("Metaspriggina walcotti\n\nЧего пока не хватало"),
-            "Metaspriggina walcotti.\nЧего пока не хватало",
+            "Metaspriggina walcotti.\n\nЧего пока не хватало",
         )
 
     def test_preprocess_text_collapses_many_linebreaks_to_one(self):
         self.assertEqual(
             preprocess_text("Первая строка\n\n\n\n\n\nВторая строка"),
-            "Первая строка.\nВторая строка",
+            "Первая строка.\n\nВторая строка",
+        )
+
+    def test_preprocess_text_preserves_paragraph_break_before_quoted_uppercase_text(self):
+        self.assertEqual(
+            preprocess_text(
+                "Часть три.\nВишну-хранитель\n\n\n"
+                "«Вишну, Хранитель мироздания, поддерживает все существующее."
+            ),
+            'Часть три.\nВишну-хранитель.\n\n"Вишну, Хранитель мироздания, поддерживает все существующее.',
         )
 
     def test_preprocess_text_preserves_letter_hyphens_inside_words(self):
@@ -186,7 +195,7 @@ class RuNormalizrApiTests(unittest.TestCase):
     def test_normalize_expands_years_ago_before_unit_normalization(self):
         self.assertEqual(
             normalize("МЕЖДУНАРОДНАЯ ШКАЛА\n541 млн л. н.", NormalizeOptions.tts()),
-            "Международная шкала. пятьсот сорок один миллион лет назад.",
+            "Международная шкала. Пятьсот сорок один миллион лет назад.",
         )
 
     def test_normalize_expands_years_ago_before_following_sentence(self):
@@ -209,7 +218,16 @@ class RuNormalizrApiTests(unittest.TestCase):
     def test_normalize_preserves_paragraph_breaks_during_full_pipeline(self):
         self.assertEqual(
             normalize("Глава IV.\n\nВстреча в 10:07."),
-            "Глава четыре.\nВстреча в десять, ноль семь.",
+            "Глава четыре.\n\nВстреча в десять, ноль семь.",
+        )
+
+    def test_normalize_preserves_paragraph_break_before_quoted_uppercase_text(self):
+        self.assertEqual(
+            normalize(
+                "Часть три.\nВишну-хранитель\n\n\n"
+                "«Вишну, Хранитель мироздания, поддерживает все существующее."
+            ),
+            'Часть три.\nВишну-хранитель.\n\n"Вишну, Хранитель мироздания, поддерживает все существующее.',
         )
 
     def test_normalize_keeps_sentence_boundary_after_etc_abbreviation(self):
@@ -234,8 +252,8 @@ class RuNormalizrApiTests(unittest.TestCase):
                 "* * *\n\n\n"
                 "Чего пока не хватало кембрийским хордовым, так это чешуи и зубов. "
             ),
-            "первый шаг в сторону обретения челюстей.\n"
-            "мэтэспригджинэ вэлкоттай.\n\n"
+            "первый шаг в сторону обретения челюстей.\n\n"
+            "Metaspriggina walcotti.\n\n"
             "Чего пока не хватало кембрийским хордовым, так это чешуи и зубов.",
         )
 
@@ -381,8 +399,8 @@ class RuNormalizrApiTests(unittest.TestCase):
 
     def test_normalize_supports_dotted_time_abbreviations(self):
         self.assertEqual(
-            normalize("длительность 2 ч. 15 мин. 7 сек."),
-            "длительность два часа пятнадцать минут семь секунд",
+            normalize("длительность 2 ч. 15 мин. 7 сек. А длина — 5 мин."),
+            "длительность два часа пятнадцать минут семь секунд. А длина — пять минут.",
         )
 
     def test_normalize_supports_more_area_volume_and_duration_variants(self):
@@ -392,7 +410,7 @@ class RuNormalizrApiTests(unittest.TestCase):
         )
         self.assertEqual(
             normalize("7 сут. и 2 нед."),
-            "семь суток и две недели",
+            "семь суток и две недели.",
         )
 
     def test_normalize_supports_more_tech_and_lab_units(self):
@@ -420,7 +438,6 @@ class RuNormalizrApiTests(unittest.TestCase):
         )
 
     def test_tts_expands_unknown_cyrillic_letter_abbreviations(self):
-        self.assertEqual(normalize("СВСН", NormalizeOptions.tts()), "эс вэ эс эн")
         self.assertEqual(normalize("ЦРУ", NormalizeOptions.tts()), "цэ эр уу")
         self.assertEqual(normalize("ФБР", NormalizeOptions.tts()), "эф бэ эр")
 

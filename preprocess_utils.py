@@ -23,12 +23,17 @@ TRAILING_SPACE_BEFORE_NEWLINE_PATTERN = re.compile(r"[ \t]+\n")
 LEADING_SPACE_AFTER_NEWLINE_PATTERN = re.compile(r"\n[ \t]+")
 EXCESSIVE_LINEBREAKS_PATTERN = re.compile(r"\n{2,}")
 DECORATIVE_SEPARATOR_PATTERN = re.compile(
-    r"(?:(?<=^)|(?<=\n)|(?<=\uE002))[ \t]*(?:[*=_~+#\-\xad\u2010-\u2015][ \t]*){3,}(?:(?=$)|(?=\n)|(?=\uE002))"
+    r"(?:(?<=^)|(?<=\n))[ \t]*(?:[*=_~+#\-\xad\u2010-\u2015][ \t]*){3,}(?:(?=$)|(?=\n))"
+)
+LEGACY_PARAGRAPH_BREAK_DOT_PATTERN = re.compile(
+    r"(?P<prev>[^\n.!?…,:;–\-\"'])(?P<break>\n{2,})(?=(?:[\"«„“]\s*)?[А-ЯЁA-Z0-9])"
 )
 LEGACY_LINEBREAK_DOT_PATTERN = re.compile(
-    r"(?<=[^\n.!?…,:;–\-\"'])(\n)(?=[А-ЯЁA-Z0-9])"
+    r"(?P<prev>[^\n.!?…,:;–\-\"'])(?P<break>\n)(?=(?:[\"«„“]\s*)?[А-ЯЁA-Z0-9])"
 )
-INLINE_LINEBREAK_SPACE_PATTERN = re.compile(r"(?<=[^\n])\n(?=[^А-ЯЁA-Z0-9\n])")
+INLINE_LINEBREAK_SPACE_PATTERN = re.compile(
+    r"(?<=[^\n])\n(?!(?:[\"«„“]\s*)?[А-ЯЁA-Z0-9])(?=[^\n])"
+)
 LETTER_HYPHEN_PLACEHOLDER = "\ue000"
 NEGATIVE_NUMBER_PLACEHOLDER = "\ue001"
 PARAGRAPH_BREAK_PLACEHOLDER = "\ue002"
@@ -42,9 +47,6 @@ def protect_unit_slashes(text: str) -> str:
         )
 
     return UNIT_SLASH_PATTERN.sub(repl, text)
-LEGACY_PLACEHOLDER_BREAK_DOT_PATTERN = re.compile(
-    rf"(?<=[^\n.!?…,:;–\-\"'])({re.escape(PARAGRAPH_BREAK_PLACEHOLDER)}+)(?=[А-ЯЁA-Z0-9])"
-)
 YEARS_AGO_ABBREVIATION_PATTERN = re.compile(
     r"(?<!\w)л\.?\s*н\.(?P<tail>\s*)",
     re.IGNORECASE,
@@ -63,7 +65,9 @@ SIGNED_INTEGER_WITH_UNIT_PATTERN = re.compile(
 INTEGER_LIST_PATTERN = re.compile(r"^\d+(?:\s*,\s*\d+)+$")
 INTEGER_RANGE_PATTERN = re.compile(r"^\d+\s*[–—-]\s*\d+$")
 SPACE_INSIDE_QUOTES_PATTERN = re.compile(r'"\s+([^\n"]+?)\s+"')
-SPACE_AFTER_OPEN_QUOTE_PATTERN = re.compile(r'(^|[\s([{\-–—,;:])"([ \t]+)(?=\S)')
+SPACE_AFTER_OPEN_QUOTE_PATTERN = re.compile(
+    r'(^|[\s([{\-–—,;:])"([ \t]+)(?=\S)'
+)
 SPACE_BEFORE_CLOSE_QUOTE_PATTERN = re.compile(
     r'(?<=\S)([ \t]+)"(?=$|[\s)\]}\-–—,.;:!?])'
 )
@@ -153,30 +157,23 @@ def apply_cleanup_replacements(text: str) -> str:
 
 
 def restore_paragraph_breaks(text: str) -> str:
-    text = re.sub(
-        rf"{PARAGRAPH_BREAK_PLACEHOLDER}[ \t]*\.[ \t]*{PARAGRAPH_BREAK_PLACEHOLDER}",
-        f".{PARAGRAPH_BREAK_PLACEHOLDER}{PARAGRAPH_BREAK_PLACEHOLDER}",
-        text,
-    )
-    text = re.sub(
-        rf"[ \t]*{PARAGRAPH_BREAK_PLACEHOLDER}[ \t]*", PARAGRAPH_BREAK_PLACEHOLDER, text
-    )
-    return text.replace(PARAGRAPH_BREAK_PLACEHOLDER, "\n")
+    return text
+
+
+def _insert_boundary_dot(match: re.Match[str]) -> str:
+    return f"{match.group('prev')}.{match.group('break')}"
 
 
 def normalize_linebreaks(text: str, keep_paragraph_placeholders: bool = False) -> str:
+    del keep_paragraph_placeholders
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = TRAILING_SPACE_BEFORE_NEWLINE_PATTERN.sub("\n", text)
     text = LEADING_SPACE_AFTER_NEWLINE_PATTERN.sub("\n", text)
-    paragraph_break = (
-        PARAGRAPH_BREAK_PLACEHOLDER if keep_paragraph_placeholders else "\n"
-    )
-    text = EXCESSIVE_LINEBREAKS_PATTERN.sub(paragraph_break, text)
-    if keep_paragraph_placeholders:
-        text = LEGACY_PLACEHOLDER_BREAK_DOT_PATTERN.sub(r".\1", text)
-    text = LEGACY_LINEBREAK_DOT_PATTERN.sub(r".\1", text)
+    text = EXCESSIVE_LINEBREAKS_PATTERN.sub("\n\n", text)
+    text = LEGACY_PARAGRAPH_BREAK_DOT_PATTERN.sub(_insert_boundary_dot, text)
+    text = LEGACY_LINEBREAK_DOT_PATTERN.sub(_insert_boundary_dot, text)
     text = INLINE_LINEBREAK_SPACE_PATTERN.sub(" ", text)
-    return text if keep_paragraph_placeholders else restore_paragraph_breaks(text)
+    return text
 
 
 def remove_decorative_separators(text: str) -> str:

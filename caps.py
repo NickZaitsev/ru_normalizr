@@ -25,8 +25,14 @@ def normalize_first_word_caps(text: str, enabled: bool = True) -> str:
         if match:
             word = match.group(2)
             rest = line[match.end() :]
-            has_following_alpha = any(char.isalpha() for char in rest)
-            if word not in KNOWN_ABBREVIATIONS and len(word) > 3 and has_following_alpha:
+            has_following_letter_or_digit = any(
+                char.isalpha() or char.isdigit() for char in rest
+            )
+            if (
+                word not in KNOWN_ABBREVIATIONS
+                and len(word) > 3
+                and has_following_letter_or_digit
+            ):
                 parts[idx] = match.group(1) + word.capitalize() + line[match.end() :]
 
     return "".join(parts)

@@ -131,7 +131,7 @@ def expand_letter_abbreviations(text: str) -> str:
         if all(char in RU_LETTER_NAMES for char in letters_upper):
             if not is_dotted:
                 parsed = get_morph().parse(joined_key.lower())[0]
-                if parsed.tag.POS in REAL_WORD_POS:
+                if parsed.tag.POS in REAL_WORD_POS and "Abbr" not in parsed.tag:
                     return token
             if not is_dotted:
                 if len(letters_upper) > ABBREV_MAX_LEN_RU:

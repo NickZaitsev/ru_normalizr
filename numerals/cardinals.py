@@ -22,6 +22,7 @@ from ._helpers import (
     parse_integer_token,
     safe_inflect,
     should_consume_abbreviation_dot,
+    should_keep_decimal_unit_dot,
     simple_tokenize,
 )
 
@@ -114,6 +115,12 @@ def normalize_cardinal_numerals(text: str) -> str:
                 next_token_lower, unit_raw, unit_token_span = unit_candidate
             unit_info = UNITS_DATA.get(next_token_lower)
             if unit_info:
+                preserve_unit_dot = (
+                    unit_raw.endswith(".")
+                    and not should_consume_abbreviation_dot(
+                        tokens, i + unit_token_span
+                    )
+                )
                 lemma, u_gender, u_category, *u_suffix = unit_info
                 multipliers = {"тысяча", "миллион", "миллиард", "триллион"}
                 currency_symbol_units = {
@@ -197,6 +204,10 @@ def normalize_cardinal_numerals(text: str) -> str:
                         + full_unit
                         + noun_token[match_unit.end() :]
                     )
+                if preserve_unit_dot and should_keep_decimal_unit_dot(
+                    detokenize(tokens[i + 1 + unit_token_span :])
+                ):
+                    full_unit += "."
                 result_tokens.extend([num_words, full_unit])
                 step = 1 + unit_token_span
                 if (
@@ -288,8 +299,25 @@ def normalize_numeric_unit_ranges(text: str) -> str:
 
 
 def normalize_remaining_post_numeral_abbreviations(text: str) -> str:
+    def preserve_sentence_boundary(
+        match: re.Match[str], replacement: str, source_text: str
+    ) -> str:
+        tail = source_text[match.end() :]
+        stripped_tail = tail.lstrip()
+        if not stripped_tail:
+            return f"{replacement}."
+        next_char = stripped_tail[0]
+        if next_char in "\n.!?…":
+            return f"{replacement}."
+        return replacement
+
     for pattern, replacement in POST_NUMERAL_ABBREVIATION_PATTERNS:
-        text = pattern.sub(replacement, text)
+        text = pattern.sub(
+            lambda match, repl=replacement, src=text: preserve_sentence_boundary(
+                match, repl, src
+            ),
+            text,
+        )
     return text
 
 
