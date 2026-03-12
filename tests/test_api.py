@@ -329,6 +329,62 @@ class RuNormalizrApiTests(unittest.TestCase):
             "длительность семьдесят четыре целых тридцать три сотых минуты и емкость — шестьсот пятьдесят мегабайтов.",
         )
 
+    def test_normalize_supports_ascii_square_and_cubic_units(self):
+        self.assertEqual(
+            normalize("площадь 10 м2, объем 3 м^3 и участок 2 км2"),
+            "площадь десять квадратных метров, объем три кубического метра и участок два квадратного километра",
+        )
+
+    def test_normalize_supports_slash_units_for_speed_and_rpm(self):
+        self.assertEqual(
+            normalize("скорость 90 км/ч, вал крутится 3000 об/мин"),
+            "скорость девяносто километров в час, вал крутится три тысячи оборотов в минуту",
+        )
+
+    def test_normalize_supports_slash_units_for_transfer_and_lab_values(self):
+        self.assertEqual(
+            normalize("канал 10 MB/s и 20 кбит/с"),
+            "канал десять мегабайтов в секунду и двадцать килобитов в секунду",
+        )
+        self.assertEqual(
+            normalize("раствор 5 мг/мл, 3 ммоль/л и 300 K"),
+            "раствор пять миллиграммов на миллилитр, три миллимоля на литр и триста кельвинов",
+        )
+
+    def test_normalize_supports_dotted_time_abbreviations(self):
+        self.assertEqual(
+            normalize("длительность 2 ч. 15 мин. 7 сек."),
+            "длительность два часа пятнадцать минут семь секунд",
+        )
+
+    def test_normalize_supports_more_area_volume_and_duration_variants(self):
+        self.assertEqual(
+            normalize("10 см2 и 5 куб.м"),
+            "десять квадратных сантиметров и пять кубических метров",
+        )
+        self.assertEqual(
+            normalize("7 сут. и 2 нед."),
+            "семь суток и две недели",
+        )
+
+    def test_normalize_supports_more_tech_and_lab_units(self):
+        self.assertEqual(
+            normalize("12 rpm"),
+            "двенадцать оборотов в минуту",
+        )
+        self.assertEqual(
+            normalize("220 V, 10 mA, 5 kWh"),
+            "двести двадцать вольт, десять миллиампер, пять киловатт-часов",
+        )
+        self.assertEqual(
+            normalize("5 IU и 3 мкг/мл"),
+            "пять международных единиц и три микрограмма на миллилитр",
+        )
+        self.assertEqual(
+            normalize("8 байт/с"),
+            "восемь байт в секунду",
+        )
+
     def test_normalize_syncs_legacy_gibdd_abbreviation_reading(self):
         self.assertEqual(
             normalize("ГИБДД", NormalizeOptions.tts()),

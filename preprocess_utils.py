@@ -7,6 +7,10 @@ from .constants import CLEANUP_REPLACEMENTS, UNICODE_FRACTIONS
 DASH_SPACE_PATTERN = re.compile(r" - ")
 LETTER_HYPHEN_PATTERN = re.compile(r"(?<=[A-Za-zА-Яа-яЁё])-(?=[A-Za-zА-Яа-яЁё])")
 SLASH_FIX_PATTERN = re.compile(r"(?<=[a-zA-Zа-яА-ЯёЁ+])/(?=[a-zA-Zа-яА-ЯёЁ+])")
+UNIT_SLASH_PATTERN = re.compile(
+    r"\b(?P<left>об|кадров|[kmg]?b|[кмг]?бит|[кмг]?б|байт|[км]?моль|мг|мкг|км|м)/(?P<right>s|с|ч|мин|л|мл|дл)\b",
+    re.IGNORECASE,
+)
 NUMBER_CLEANUP_PATTERN = re.compile(
     r"(?<!\d)(?:\d{1,3}(?:[ \u00A0\u2009\u202F]\d{3})+|\d+)(?:[,\.]\d+)?(?!\d)"
 )
@@ -28,6 +32,16 @@ INLINE_LINEBREAK_SPACE_PATTERN = re.compile(r"(?<=[^\n])\n(?=[^А-ЯЁA-Z0-9\n])
 LETTER_HYPHEN_PLACEHOLDER = "\ue000"
 NEGATIVE_NUMBER_PLACEHOLDER = "\ue001"
 PARAGRAPH_BREAK_PLACEHOLDER = "\ue002"
+UNIT_SLASH_PLACEHOLDER = "\ue003"
+
+
+def protect_unit_slashes(text: str) -> str:
+    def repl(match: re.Match[str]) -> str:
+        return (
+            f"{match.group('left')}{UNIT_SLASH_PLACEHOLDER}{match.group('right')}"
+        )
+
+    return UNIT_SLASH_PATTERN.sub(repl, text)
 LEGACY_PLACEHOLDER_BREAK_DOT_PATTERN = re.compile(
     rf"(?<=[^\n.!?…,:;–\-\"'])({re.escape(PARAGRAPH_BREAK_PLACEHOLDER)}+)(?=[А-ЯЁA-Z0-9])"
 )

@@ -4,9 +4,10 @@ import re
 
 from .._morph import get_morph
 from ..preprocess_utils import NEGATIVE_NUMBER_PLACEHOLDER
-from ._constants import UNITS_DATA
+from ._constants import UNIT_TOKEN_FRAGMENT, UNITS_DATA
 from ._helpers import (
     get_numeral_case,
+    inflect_unit_lemma,
     inflect_numeral_string,
     safe_inflect,
     should_keep_decimal_unit_dot,
@@ -14,7 +15,7 @@ from ._helpers import (
 )
 
 DECIMAL_PATTERN = re.compile(
-    rf"(?<!\d)(?P<num>(?:-|{re.escape(NEGATIVE_NUMBER_PLACEHOLDER)})?\d+[.,]\d+)(?:\s*(?P<unit>[а-яА-ЯёЁa-zA-Z%°$€₽Ω]+)(?P<unit_dot>\.)?)?(?:\s+(?P<unit2>[а-яА-ЯёЁa-zA-Z%°$€₽Ω]+)(?P<unit2_dot>\.)?)?(?!\d)"
+    rf"(?<!\d)(?P<num>(?:-|{re.escape(NEGATIVE_NUMBER_PLACEHOLDER)})?\d+[.,]\d+)(?:\s*(?P<unit>{UNIT_TOKEN_FRAGMENT})(?P<unit_dot>\.)?)?(?:\s+(?P<unit2>{UNIT_TOKEN_FRAGMENT})(?P<unit2_dot>\.)?)?(?!\d)"
 )
 
 
@@ -71,8 +72,7 @@ def normalize_decimals(text: str) -> str:
             unit2_processed = False
             if unit_info:
                 lemma, _, _, *u_suffix = unit_info
-                p_unit = morph.parse(lemma)[0]
-                result += " " + safe_inflect(p_unit, {"gent", "sing"})
+                result += " " + inflect_unit_lemma(lemma, {"gent", "sing"})
                 if u_suffix:
                     result += " " + u_suffix[0]
                 if unit2_raw:
@@ -81,8 +81,7 @@ def normalize_decimals(text: str) -> str:
                     multipliers = {"тысяча", "миллион", "миллиард", "триллион"}
                     if lemma in multipliers and unit2_info:
                         lemma2, _, _, *suffix2 = unit2_info
-                        p_unit2 = morph.parse(lemma2)[0]
-                        result += " " + safe_inflect(p_unit2, {"gent", "plur"})
+                        result += " " + inflect_unit_lemma(lemma2, {"gent", "plur"})
                         if suffix2:
                             result += " " + suffix2[0]
                         unit2_processed = True

@@ -104,6 +104,49 @@ def safe_inflect(
     return fallback_word
 
 
+def inflect_unit_lemma(lemma: str, target_tags: set[str]) -> str:
+    morph = get_morph()
+
+    def pick_preferred_parse(word: str) -> Any | None:
+        parsed = morph.parse(word)
+        if not parsed:
+            return None
+        for candidate in parsed:
+            if "NOUN" in candidate.tag:
+                return candidate
+        return parsed[0]
+
+    if " " not in lemma:
+        parsed = pick_preferred_parse(lemma)
+        if not parsed:
+            return lemma
+        return safe_inflect(parsed, target_tags, fallback_word=lemma)
+
+    parts = lemma.split()
+    if len(parts) != 2:
+        return lemma
+
+    adj_text, noun_text = parts
+    adj_parsed = pick_preferred_parse(adj_text)
+    noun_parsed = pick_preferred_parse(noun_text)
+    if not adj_parsed or not noun_parsed:
+        return lemma
+
+    noun_form = safe_inflect(noun_parsed, target_tags, fallback_word=noun_text)
+    adj_tags = {tag for tag in target_tags if tag in {"nomn", "gent", "datv", "accs", "ablt", "loct", "sing", "plur"}}
+    if "plur" not in adj_tags:
+        noun_gender = noun_parsed.tag.gender
+        if noun_gender:
+            adj_tags.add(noun_gender)
+    adj_form = safe_inflect(
+        adj_parsed,
+        adj_tags,
+        fallback_word=adj_text,
+        pos_filter={"ADJF", "PRTF"},
+    )
+    return f"{adj_form} {noun_form}"
+
+
 def is_case_reliable_noun(parsed_word: Any) -> bool:
     return "NOUN" in parsed_word.tag and "Fixd" not in parsed_word.tag
 

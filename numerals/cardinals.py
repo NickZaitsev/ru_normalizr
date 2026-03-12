@@ -18,6 +18,7 @@ from ._helpers import (
     get_numeral_case,
     get_target_tags_for_number,
     inflect_numeral_string,
+    inflect_unit_lemma,
     parse_integer_token,
     safe_inflect,
     should_consume_abbreviation_dot,
@@ -29,6 +30,19 @@ def normalize_cardinal_numerals(text: str) -> str:
     morph = get_morph()
     tokens = simple_tokenize(text)
     result_tokens: list[str] = []
+
+    def extract_unit_candidate(start_index: int) -> tuple[str, str, int] | None:
+        best_match: tuple[str, str, int] | None = None
+        max_end = min(len(tokens), start_index + 4)
+        for end_index in range(start_index + 1, max_end + 1):
+            chunk = tokens[start_index:end_index]
+            if any("\n" in token for token in chunk):
+                break
+            candidate_raw = "".join(chunk)
+            candidate_key = candidate_raw.lower().strip(".")
+            if candidate_key in UNITS_DATA:
+                best_match = (candidate_key, candidate_raw, end_index - start_index)
+        return best_match
 
     def is_redundant_unit_token(token_index: int, expected_lemma: str) -> bool:
         if token_index >= len(tokens):
@@ -86,15 +100,21 @@ def normalize_cardinal_numerals(text: str) -> str:
         if i + 1 < len(tokens):
             noun_token = tokens[i + 1]
             next_token_lower = noun_token.lower().strip('.,:;!"«»()[]{}')
+            unit_candidate = extract_unit_candidate(i + 1)
+            unit_token_span = 1
+            unit_raw = noun_token
             if next_token_lower == "°" and i + 2 < len(tokens):
                 degree_suffix = tokens[i + 2].lower().strip('.,:;!"«»()[]{}')
                 if degree_suffix in {"c", "k", "f"}:
                     next_token_lower = f"°{degree_suffix}"
                     noun_token = f"{noun_token}{tokens[i + 2]}"
+                    unit_raw = noun_token
+                    unit_token_span = 2
+            elif unit_candidate:
+                next_token_lower, unit_raw, unit_token_span = unit_candidate
             unit_info = UNITS_DATA.get(next_token_lower)
             if unit_info:
                 lemma, u_gender, u_category, *u_suffix = unit_info
-                p_unit = morph.parse(lemma)[0]
                 multipliers = {"тысяча", "миллион", "миллиард", "триллион"}
                 currency_symbol_units = {
                     "$",
@@ -144,7 +164,7 @@ def normalize_cardinal_numerals(text: str) -> str:
                             [
                                 num_words,
                                 multiplier_token,
-                                safe_inflect(p_unit, {"gent", "plur"}),
+                                inflect_unit_lemma(lemma, {"gent", "plur"}),
                             ]
                         )
                         i += 4 if is_redundant_unit_token(i + 3, lemma) else 3
@@ -162,12 +182,14 @@ def normalize_cardinal_numerals(text: str) -> str:
                     inflect_numeral_string(clean_token, target_num_case, u_gender),
                     is_negative,
                 )
-                inflected_unit = safe_inflect(
-                    p_unit, get_target_tags_for_number(val, case, u_gender)
+                inflected_unit = inflect_unit_lemma(
+                    lemma, get_target_tags_for_number(val, case, u_gender)
                 )
                 full_unit = inflected_unit + (f" {u_suffix[0]}" if u_suffix else "")
-                match_unit = re.search(
-                    re.escape(next_token_lower), noun_token, re.IGNORECASE
+                match_unit = (
+                    re.search(re.escape(next_token_lower), noun_token, re.IGNORECASE)
+                    if unit_token_span == 1
+                    else None
                 )
                 if match_unit:
                     full_unit = (
@@ -176,9 +198,13 @@ def normalize_cardinal_numerals(text: str) -> str:
                         + noun_token[match_unit.end() :]
                     )
                 result_tokens.extend([num_words, full_unit])
-                step = (
-                    3 if next_token_lower.startswith("°") and len(next_token_lower) == 2 else 2
-                )
+                step = 1 + unit_token_span
+                if (
+                    unit_token_span == 1
+                    and next_token_lower.startswith("°")
+                    and len(next_token_lower) == 2
+                ):
+                    step = 3
                 if i + step < len(tokens) and should_consume_abbreviation_dot(tokens, i + step):
                     step += 1
                 if is_redundant_unit_token(i + step, lemma):
@@ -251,9 +277,8 @@ def normalize_numeric_unit_ranges(text: str) -> str:
             return inflect_numeral_string(value_text, target_case, u_gender)
 
         right_value = int(right)
-        p_unit = morph.parse(lemma)[0]
-        unit_words = safe_inflect(
-            p_unit, get_target_tags_for_number(right_value, case, u_gender)
+        unit_words = inflect_unit_lemma(
+            lemma, get_target_tags_for_number(right_value, case, u_gender)
         )
         if u_suffix:
             unit_words += f" {u_suffix[0]}"
