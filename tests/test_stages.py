@@ -124,6 +124,16 @@ class RuNormalizrStageTests(unittest.TestCase):
             "и так далее.\nСледующая строка",
         )
 
+    def test_abbreviation_stage_prefers_note_specific_rules(self):
+        self.assertEqual(
+            expand_abbreviations("(прим. перев.)"),
+            "(примечание переводчика)",
+        )
+        self.assertEqual(
+            expand_abbreviations("прим.ред."),
+            "примечание редактора",
+        )
+
     def test_year_stage(self):
         self.assertIn(
             "году книга",
