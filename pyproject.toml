@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ru-normalizr"
+version = "0.1.0"
+description = "Normalization-only Russian text preprocessing."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [{name = "nenavision"}]
+keywords = ["russian", "normalization", "nlp", "text-processing", "tts"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Natural Language :: Russian",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Text Processing :: Linguistic",
+]
+dependencies = [
+  "num2words",
+  "pymorphy3",
+  "pymorphy3-dicts-ru",
+  "roman",
+]
+
+[project.urls]
+Homepage = "https://github.com/nenavision/ru-normalizr"
+Repository = "https://github.com/nenavision/ru-normalizr"
+Issues = "https://github.com/nenavision/ru-normalizr/issues"
+Changelog = "https://github.com/nenavision/ru-normalizr/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+ipa = ["eng_to_ipa"]
+
+[project.scripts]
+ru-normalizr = "ru_normalizr.__main__:main"
+
+[tool.setuptools]
+packages = ["ru_normalizr"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+ru_normalizr = "."
+
+[tool.setuptools.package-data]
+ru_normalizr = ["py.typed", "dictionaries/*.dic", "LICENSE", "CHANGELOG.md", "VERSIONING.md", "PYPI_RELEASE_CHECKLIST.md", "requirements-dev.txt"]
