@@ -163,6 +163,24 @@ class RuNormalizrApiTests(unittest.TestCase):
             'Основное правило: любое объяснение лучше его отсутствия… Итак. Ницше, "Сумерки богов"',
         )
 
+    def test_preprocess_text_inserts_space_after_closing_quote_before_word(self):
+        self.assertEqual(
+            preprocess_text('просто не могли не «подобрать» одну из самых древних'),
+            'просто не могли не "подобрать" одну из самых древних',
+        )
+
+    def test_preprocess_text_keeps_separate_quote_pairs_around_sentences(self):
+        self.assertEqual(
+            preprocess_text(
+                'Когда настал назначенный день, многие провожали его к берегу реки, войдя в которую, он сказал: '
+                '«Смерть, где твое жало?» И когда он погрузился глубже, то продолжал: '
+                '«Ад, где твоя победа?» (I Коринф. 15: 55).'
+            ),
+            'Когда настал назначенный день, многие провожали его к берегу реки, войдя в которую, он сказал: '
+            '"Смерть, где твое жало?" И когда он погрузился глубже, то продолжал: '
+            '"Ад, где твоя победа?" (I Коринф. 15: 55).',
+        )
+
     def test_normalize_matches_preprocess_when_later_stages_are_disabled(self):
         options = NormalizeOptions(
             enable_year_normalization=False,
