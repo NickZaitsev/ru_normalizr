@@ -4,6 +4,11 @@ All notable changes to `ru-normalizr` will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.1.1] - 2026-03-13
+
+### Changed
+- Fixed quote space normalization.
+- Updated Readme and project description.
 
 ## [0.1.0] - 2026-03-11
 

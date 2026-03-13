@@ -74,7 +74,7 @@ SPACE_BEFORE_CLOSE_QUOTE_PATTERN = re.compile(
     r'(?<=\S)([ \t]+)"(?=$|[\s)\]}\-–—,.;:!?])'
 )
 SPACE_AFTER_CLOSE_QUOTE_PATTERN = re.compile(
-    r'(?<=\S)"(?=[A-Za-zА-Яа-яЁё0-9])'
+    r'(?<=[A-Za-zА-Яа-яЁё0-9.,!?…:;])"(?=[A-Za-zА-Яа-яЁё0-9])'
 )
 ELLIPSIS_SPACE_BEFORE_PATTERN = re.compile(r"[ \t]+(?=…)")
 ELLIPSIS_SPACE_AFTER_PATTERN = re.compile(r"(?<=…)(?=[^\s.,;:!?…)\]}\"])\S")
