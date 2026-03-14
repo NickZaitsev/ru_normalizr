@@ -4,6 +4,13 @@ All notable changes to `ru-normalizr` will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.1.2] - 2026-03-14
+### Changed
+- Updated README.md.
+- Fixed incorrect repository/homepage links in PyPI metadata.
+- Cleaned up lint issues and added release helper scripts.
+- Added GitHub Actions CI and tag-based PyPI release automation.
+
 ## [0.1.1] - 2026-03-13
 
 ### Changed
