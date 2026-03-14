@@ -2,7 +2,6 @@
 
 ## Before tagging
 
-- Ensure `py -3.12 -m pytest -q` passes.
 - Ensure the working tree is in the state you want to publish.
 - Review `CHANGELOG.md` and add a release entry.
 - Update version in:
@@ -17,13 +16,22 @@
 py -3.12 -m pip install -r requirements-dev.txt
 ```
 
-## Clean local artifacts
+## Preferred validation flow
 
 ```bash
-py -3.12 scripts/dev.py clean
+py -3.12 scripts/dev.py check
 ```
 
-This removes local build/cache junk that should not affect the release:
+`check` already runs the full release validation flow:
+
+- `clean`
+- version sync check between `__init__.py` and `pyproject.toml`
+- `ruff check .`
+- `pytest -q`
+- fresh build of `dist/*`
+- `twine check dist/*`
+
+`clean` inside `check` removes local build/cache junk:
 
 - `build/`
 - `dist/`
@@ -32,23 +40,17 @@ This removes local build/cache junk that should not affect the release:
 - `.pytest_cache/`
 - `.ruff_cache/`
 - all `__pycache__/`
-- dictionary cache files like `dictionaries/dictionaries_*.pkl`
+- dictionary cache files like `dictionaries/**/dictionaries_*.pkl`
 
-## Release validation
+## Optional manual commands
 
-Preferred full check:
-
-```bash
-py -3.12 scripts/dev.py check
-```
-
-Equivalent manual flow:
+Use these only when you need a single step:
 
 ```bash
-py -3.12 -m ruff check .
-py -3.12 -m pytest -q
+py -3.12 scripts/dev.py clean
 py -3.12 scripts/dev.py build
-py -3.12 -m twine check dist/*
+py -3.12 scripts/dev.py test
+py -3.12 scripts/dev.py lint
 ```
 
 ## Optional TestPyPI upload
@@ -56,6 +58,8 @@ py -3.12 -m twine check dist/*
 ```bash
 py -3.12 scripts/dev.py publish --repository testpypi
 ```
+
+`publish` runs `check` automatically first unless you pass `--skip-check`.
 
 ## Final publish flow
 
